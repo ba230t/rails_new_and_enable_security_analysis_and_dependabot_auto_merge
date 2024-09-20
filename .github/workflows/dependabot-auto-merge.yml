@@ -33,7 +33,7 @@ jobs:
       - name: Setup and run tests
         if: ${{ steps.metadata.outputs.update-type != 'version-update:semver-patch' }}
         run: |
-          chmod +x bin/setup
+          chmod +x bin/*
           bin/setup
           bundle exec rails test
 

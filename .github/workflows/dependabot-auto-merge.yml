@@ -1,4 +1,5 @@
-# https://dev.classmethod.jp/articles/github-dependabot-auto-merge/
+# Automatically merges Dependabot patch updates.
+# For other updates, runs tests and merges if successful.
 name: Dependabot auto-merge
 on: pull_request_target
 
@@ -16,8 +17,28 @@ jobs:
         uses: dependabot/fetch-metadata@v1.1.1
         with:
           github-token: '${{ secrets.GITHUB_TOKEN }}'
-      - name: Enable auto-merge for Dependabot PRs
-        if: ${{ steps.metadata.outputs.update-type == 'version-update:semver-patch' }}
+
+      - name: Checkout code
+        if: ${{ steps.metadata.outputs.update-type != 'version-update:semver-patch' }}
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Ruby
+        if: ${{ steps.metadata.outputs.update-type != 'version-update:semver-patch' }}
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Setup and run tests
+        if: ${{ steps.metadata.outputs.update-type != 'version-update:semver-patch' }}
+        run: |
+          chmod +x bin/*
+          bin/setup
+          bundle exec rails test
+
+      - name: Auto-merge PR
+        if: ${{ success() }}
         run: gh pr merge --auto --merge "$PR_URL"
         env:
           PR_URL: ${{github.event.pull_request.html_url}}
